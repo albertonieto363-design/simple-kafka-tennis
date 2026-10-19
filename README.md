@@ -19,7 +19,7 @@ Polymarket API --> TennisBackfill --> [tennis-prices] [tennis-results]  (topics 
 
 The broker is used for what Kafka is for: an append-only log that several readers can replay from the start. Both studies read the full history from offset 0 every time they run.
 
-## What I built and changed
+## What I built and changed(with claude)
 
 **On the broker (from the tutorial)**
 1. **Reads across log segments.** A read that crossed into the next segment file kept using the old closed channel and returned bad data. I rewrote the read loop (`Partition.readMessages`) and made lookups past the end of the index return "not found". 8 tests use 100-byte segments to force many rollovers.
@@ -109,7 +109,7 @@ Java 21, Maven, JUnit 5, Apache ZooKeeper 3.8 client library.
 
 ## What I learned
 
-[Add 3 or 4 sentences in your own words: what offsets and partitions are, why Kafka keeps a log on disk, and what you learned about testing a trading idea.]
+This was my first big project, and I used Claude to help me build and debug it. Starting from the tutorial, I learned that Kafka stores messages in an append-only log, and that a consumer can re-read from any position (an offset). I learned how to run a project with several programs at once (ZooKeeper, the broker, and the tools) and how to run its tests with Maven. The part I understand best is the finding: the market’s prices were well calibrated, and a trading rule that looked good on training data did not hold up on new data. I’m still working on understanding the broker’s storage code in detail.
 
 ## Next steps
 
