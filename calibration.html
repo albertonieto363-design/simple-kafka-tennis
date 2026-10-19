@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis price calibration</title>
+<style>
+:root { color-scheme: light; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#6b6a66;
+  --grid:#e7e6e2; --series:#2a78d6; --diag:#8d8c86; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) { color-scheme: dark;
+  --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#a8a79e; --grid:#2f2f2d; --series:#3987e5; --diag:#8d8c86; } }
+:root[data-theme="dark"] { color-scheme: dark; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7;
+  --muted:#a8a79e; --grid:#2f2f2d; --series:#3987e5; --diag:#8d8c86; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--surface); color:var(--ink); font:15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+main { max-width:1280px; margin:0 auto; padding:24px 16px 48px; }
+h1 { font-size:24px; margin:0 0 4px; }
+h2 { font-size:16px; margin:0 0 4px; }
+.sub, .how { color:var(--ink2); margin:0 0 8px; max-width:70ch; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:32px; margin-top:20px; }
+.panel { min-width:0; }
+.stats { margin:0 0 8px; color:var(--ink2); font-size:14px; }
+.note { margin:0 0 8px; color:var(--muted); font-size:13px; }
+svg { width:100%; height:auto; display:block; }
+line.gl { stroke:var(--grid); stroke-width:1; }
+line.diag { stroke:var(--diag); stroke-width:1.5; }
+line.ci { stroke:var(--series); stroke-width:2; opacity:.55; stroke-linecap:round; }
+circle.dot { fill:var(--series); stroke:var(--surface); stroke-width:2; }
+circle.hit { fill:transparent; }
+.pt { cursor:default; outline:none; }
+.pt:focus circle.dot, .pt:hover circle.dot { stroke:var(--ink); }
+text.tick { fill:var(--muted); font-size:11px; }
+text.axis { fill:var(--ink2); font-size:12px; }
+table { border-collapse:collapse; width:100%; margin-top:8px; font-size:13px; font-variant-numeric:tabular-nums; }
+th, td { text-align:right; padding:3px 6px; border-bottom:1px solid var(--grid); }
+th:first-child, td:first-child { text-align:left; }
+th { color:var(--ink2); font-weight:600; }
+#tip { position:absolute; z-index:10; max-width:280px; padding:6px 10px; font-size:13px; pointer-events:none;
+  background:var(--ink); color:var(--surface); border-radius:6px; transform:translate(-50%,-100%); }
+#tip[hidden] { display:none; }
+</style>
+</head>
+<body>
+<main>
+<h1>Are Polymarket tennis prices calibrated?</h1>
+<p class="sub">326 finished matches replayed from the broker on 2026-10-19. Small samples are noisy, so read the bars before the dots.</p>
+<p class="how">Each dot is a price bucket for the market's favorite. Across: the average price. Up: how often the favorite won. The gray line is perfect calibration, the bars are 95% ranges, and bigger dots hold more matches.</p>
+<div class="grid">
+<section class="panel">
+<h2>120 minutes before the scheduled start</h2>
+<p class="stats">325 matches &middot; Brier 0.211 (50/50 would be 0.250) &middot; log loss 0.607<br>Favorites were priced 66.3% on average and won 64.6%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 120 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="85.9" y1="160.4" x2="85.9" y2="223.6" class="ci"/>
+<line x1="151.7" y1="96.3" x2="151.7" y2="160.2" class="ci"/>
+<line x1="216.9" y1="95.7" x2="216.9" y2="171.8" class="ci"/>
+<line x1="278.6" y1="20.3" x2="278.6" y2="86.5" class="ci"/>
+<line x1="349.5" y1="18.5" x2="349.5" y2="124.1" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 114 matches, favorite won 56 (49.1%), average price 55.0%, 95% range 40-58%"><circle cx="85.9" cy="192.1" r="14" class="hit"/><circle cx="85.9" cy="192.1" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 97 matches, favorite won 66 (68.0%), average price 64.7%, 95% range 58-76%"><circle cx="151.7" cy="125.9" r="14" class="hit"/><circle cx="151.7" cy="125.9" r="9.9" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 69 matches, favorite won 46 (66.7%), average price 74.2%, 95% range 55-77%"><circle cx="216.9" cy="130.7" r="14" class="hit"/><circle cx="216.9" cy="130.7" r="9.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 31 matches, favorite won 29 (93.5%), average price 83.3%, 95% range 79-98%"><circle cx="278.6" cy="36.6" r="14" class="hit"/><circle cx="278.6" cy="36.6" r="7.3" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 14 matches, favorite won 13 (92.9%), average price 93.7%, 95% range 69-99%"><circle cx="349.5" cy="39.0" r="14" class="hit"/><circle cx="349.5" cy="39.0" r="6.2" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>114</td><td>55.0%</td><td>49.1%</td><td>40-58%</td></tr>
+<tr><td>60-70%</td><td>97</td><td>64.7%</td><td>68.0%</td><td>58-76%</td></tr>
+<tr><td>70-80%</td><td>69</td><td>74.2%</td><td>66.7%</td><td>55-77%</td></tr>
+<tr><td>80-90%</td><td>31</td><td>83.3%</td><td>93.5%</td><td>79-98%</td></tr>
+<tr><td>90-100%</td><td>14</td><td>93.7%</td><td>92.9%</td><td>69-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>60 minutes before the scheduled start</h2>
+<p class="stats">325 matches &middot; Brier 0.213 (50/50 would be 0.250) &middot; log loss 0.610<br>Favorites were priced 66.2% on average and won 64.9%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 60 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="85.4" y1="154.1" x2="85.4" y2="217.8" class="ci"/>
+<line x1="149.9" y1="101.8" x2="149.9" y2="166.2" class="ci"/>
+<line x1="218.2" y1="89.9" x2="218.2" y2="162.2" class="ci"/>
+<line x1="279.6" y1="20.9" x2="279.6" y2="93.3" class="ci"/>
+<line x1="349.0" y1="18.8" x2="349.0" y2="130.6" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 112 matches, favorite won 57 (50.9%), average price 54.9%, 95% range 42-60%"><circle cx="85.4" cy="185.9" r="14" class="hit"/><circle cx="85.4" cy="185.9" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 98 matches, favorite won 65 (66.3%), average price 64.4%, 95% range 57-75%"><circle cx="149.9" cy="131.9" r="14" class="hit"/><circle cx="149.9" cy="131.9" r="9.9" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 74 matches, favorite won 51 (68.9%), average price 74.4%, 95% range 58-78%"><circle cx="218.2" cy="122.8" r="14" class="hit"/><circle cx="218.2" cy="122.8" r="9.2" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 28 matches, favorite won 26 (92.9%), average price 83.5%, 95% range 77-98%"><circle cx="279.6" cy="39.0" r="14" class="hit"/><circle cx="279.6" cy="39.0" r="7.2" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 13 matches, favorite won 12 (92.3%), average price 93.7%, 95% range 67-99%"><circle cx="349.0" cy="40.9" r="14" class="hit"/><circle cx="349.0" cy="40.9" r="6.2" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>112</td><td>54.9%</td><td>50.9%</td><td>42-60%</td></tr>
+<tr><td>60-70%</td><td>98</td><td>64.4%</td><td>66.3%</td><td>57-75%</td></tr>
+<tr><td>70-80%</td><td>74</td><td>74.4%</td><td>68.9%</td><td>58-78%</td></tr>
+<tr><td>80-90%</td><td>28</td><td>83.5%</td><td>92.9%</td><td>77-98%</td></tr>
+<tr><td>90-100%</td><td>13</td><td>93.7%</td><td>92.3%</td><td>67-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>30 minutes before the scheduled start</h2>
+<p class="stats">325 matches &middot; Brier 0.218 (50/50 would be 0.250) &middot; log loss 0.621<br>Favorites were priced 66.3% on average and won 63.1%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 30 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="86.7" y1="158.5" x2="86.7" y2="222.5" class="ci"/>
+<line x1="149.2" y1="110.5" x2="149.2" y2="175.6" class="ci"/>
+<line x1="217.3" y1="100.6" x2="217.3" y2="175.8" class="ci"/>
+<line x1="277.7" y1="20.7" x2="277.7" y2="90.9" class="ci"/>
+<line x1="348.8" y1="18.5" x2="348.8" y2="124.1" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 111 matches, favorite won 55 (49.5%), average price 55.1%, 95% range 40-59%"><circle cx="86.7" cy="190.6" r="14" class="hit"/><circle cx="86.7" cy="190.6" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 99 matches, favorite won 63 (63.6%), average price 64.3%, 95% range 54-72%"><circle cx="149.2" cy="141.3" r="14" class="hit"/><circle cx="149.2" cy="141.3" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 72 matches, favorite won 47 (65.3%), average price 74.3%, 95% range 54-75%"><circle cx="217.3" cy="135.5" r="14" class="hit"/><circle cx="217.3" cy="135.5" r="9.1" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 29 matches, favorite won 27 (93.1%), average price 83.2%, 95% range 78-98%"><circle cx="277.7" cy="38.1" r="14" class="hit"/><circle cx="277.7" cy="38.1" r="7.2" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 14 matches, favorite won 13 (92.9%), average price 93.6%, 95% range 69-99%"><circle cx="348.8" cy="39.0" r="14" class="hit"/><circle cx="348.8" cy="39.0" r="6.2" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>111</td><td>55.1%</td><td>49.5%</td><td>40-59%</td></tr>
+<tr><td>60-70%</td><td>99</td><td>64.3%</td><td>63.6%</td><td>54-72%</td></tr>
+<tr><td>70-80%</td><td>72</td><td>74.3%</td><td>65.3%</td><td>54-75%</td></tr>
+<tr><td>80-90%</td><td>29</td><td>83.2%</td><td>93.1%</td><td>78-98%</td></tr>
+<tr><td>90-100%</td><td>14</td><td>93.6%</td><td>92.9%</td><td>69-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>15 minutes before the scheduled start</h2>
+<p class="stats">326 matches &middot; Brier 0.212 (50/50 would be 0.250) &middot; log loss 0.609<br>Favorites were priced 66.4% on average and won 64.7%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 15 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="86.3" y1="156.9" x2="86.3" y2="221.1" class="ci"/>
+<line x1="150.1" y1="103.1" x2="150.1" y2="167.0" class="ci"/>
+<line x1="217.8" y1="91.0" x2="217.8" y2="164.0" class="ci"/>
+<line x1="282.8" y1="20.3" x2="282.8" y2="86.5" class="ci"/>
+<line x1="351.3" y1="19.2" x2="351.3" y2="137.9" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 110 matches, favorite won 55 (50.0%), average price 55.0%, 95% range 41-59%"><circle cx="86.3" cy="189.0" r="14" class="hit"/><circle cx="86.3" cy="189.0" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 100 matches, favorite won 66 (66.0%), average price 64.4%, 95% range 56-75%"><circle cx="150.1" cy="133.0" r="14" class="hit"/><circle cx="150.1" cy="133.0" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 73 matches, favorite won 50 (68.5%), average price 74.4%, 95% range 57-78%"><circle cx="217.8" cy="124.3" r="14" class="hit"/><circle cx="217.8" cy="124.3" r="9.1" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 31 matches, favorite won 29 (93.5%), average price 83.9%, 95% range 79-98%"><circle cx="282.8" cy="36.6" r="14" class="hit"/><circle cx="282.8" cy="36.6" r="7.3" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 12 matches, favorite won 11 (91.7%), average price 94.0%, 95% range 65-99%"><circle cx="351.3" cy="43.2" r="14" class="hit"/><circle cx="351.3" cy="43.2" r="6.1" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>110</td><td>55.0%</td><td>50.0%</td><td>41-59%</td></tr>
+<tr><td>60-70%</td><td>100</td><td>64.4%</td><td>66.0%</td><td>56-75%</td></tr>
+<tr><td>70-80%</td><td>73</td><td>74.4%</td><td>68.5%</td><td>57-78%</td></tr>
+<tr><td>80-90%</td><td>31</td><td>83.9%</td><td>93.5%</td><td>79-98%</td></tr>
+<tr><td>90-100%</td><td>12</td><td>94.0%</td><td>91.7%</td><td>65-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>10 minutes before the scheduled start</h2>
+<p class="stats">326 matches &middot; Brier 0.215 (50/50 would be 0.250) &middot; log loss 0.616<br>Favorites were priced 66.3% on average and won 63.5%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 10 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="86.0" y1="161.8" x2="86.0" y2="225.2" class="ci"/>
+<line x1="149.7" y1="107.0" x2="149.7" y2="172.8" class="ci"/>
+<line x1="217.3" y1="88.9" x2="217.3" y2="160.4" class="ci"/>
+<line x1="278.4" y1="26.5" x2="278.4" y2="106.3" class="ci"/>
+<line x1="349.5" y1="18.8" x2="349.5" y2="130.6" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 113 matches, favorite won 55 (48.7%), average price 55.0%, 95% range 40-58%"><circle cx="86.0" cy="193.6" r="14" class="hit"/><circle cx="86.0" cy="193.6" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 96 matches, favorite won 62 (64.6%), average price 64.4%, 95% range 55-73%"><circle cx="149.7" cy="138.0" r="14" class="hit"/><circle cx="149.7" cy="138.0" r="9.9" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 75 matches, favorite won 52 (69.3%), average price 74.3%, 95% range 58-79%"><circle cx="217.3" cy="121.3" r="14" class="hit"/><circle cx="217.3" cy="121.3" r="9.2" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 29 matches, favorite won 26 (89.7%), average price 83.3%, 95% range 74-96%"><circle cx="278.4" cy="50.2" r="14" class="hit"/><circle cx="278.4" cy="50.2" r="7.2" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 13 matches, favorite won 12 (92.3%), average price 93.8%, 95% range 67-99%"><circle cx="349.5" cy="40.9" r="14" class="hit"/><circle cx="349.5" cy="40.9" r="6.2" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>113</td><td>55.0%</td><td>48.7%</td><td>40-58%</td></tr>
+<tr><td>60-70%</td><td>96</td><td>64.4%</td><td>64.6%</td><td>55-73%</td></tr>
+<tr><td>70-80%</td><td>75</td><td>74.3%</td><td>69.3%</td><td>58-79%</td></tr>
+<tr><td>80-90%</td><td>29</td><td>83.3%</td><td>89.7%</td><td>74-96%</td></tr>
+<tr><td>90-100%</td><td>13</td><td>93.8%</td><td>92.3%</td><td>67-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>5 minutes before the scheduled start</h2>
+<p class="stats">326 matches &middot; Brier 0.213 (50/50 would be 0.250) &middot; log loss 0.611<br>Favorites were priced 66.6% on average and won 64.1%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 5 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="85.8" y1="162.8" x2="85.8" y2="227.7" class="ci"/>
+<line x1="147.9" y1="103.7" x2="147.9" y2="169.1" class="ci"/>
+<line x1="218.0" y1="90.7" x2="218.0" y2="161.7" class="ci"/>
+<line x1="279.1" y1="25.3" x2="279.1" y2="98.8" class="ci"/>
+<line x1="349.5" y1="18.8" x2="349.5" y2="130.6" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 108 matches, favorite won 52 (48.1%), average price 55.0%, 95% range 39-57%"><circle cx="85.8" cy="195.5" r="14" class="hit"/><circle cx="85.8" cy="195.5" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 96 matches, favorite won 63 (65.6%), average price 64.1%, 95% range 56-74%"><circle cx="147.9" cy="134.3" r="14" class="hit"/><circle cx="147.9" cy="134.3" r="9.9" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 77 matches, favorite won 53 (68.8%), average price 74.4%, 95% range 58-78%"><circle cx="218.0" cy="123.1" r="14" class="hit"/><circle cx="218.0" cy="123.1" r="9.3" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 32 matches, favorite won 29 (90.6%), average price 83.4%, 95% range 76-97%"><circle cx="279.1" cy="46.8" r="14" class="hit"/><circle cx="279.1" cy="46.8" r="7.4" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 13 matches, favorite won 12 (92.3%), average price 93.8%, 95% range 67-99%"><circle cx="349.5" cy="40.9" r="14" class="hit"/><circle cx="349.5" cy="40.9" r="6.2" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>108</td><td>55.0%</td><td>48.1%</td><td>39-57%</td></tr>
+<tr><td>60-70%</td><td>96</td><td>64.1%</td><td>65.6%</td><td>56-74%</td></tr>
+<tr><td>70-80%</td><td>77</td><td>74.4%</td><td>68.8%</td><td>58-78%</td></tr>
+<tr><td>80-90%</td><td>32</td><td>83.4%</td><td>90.6%</td><td>76-97%</td></tr>
+<tr><td>90-100%</td><td>13</td><td>93.8%</td><td>92.3%</td><td>67-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>2 minutes before the scheduled start</h2>
+<p class="stats">326 matches &middot; Brier 0.212 (50/50 would be 0.250) &middot; log loss 0.608<br>Favorites were priced 66.4% on average and won 64.1%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 2 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="84.8" y1="155.5" x2="84.8" y2="219.5" class="ci"/>
+<line x1="148.8" y1="121.3" x2="148.8" y2="187.9" class="ci"/>
+<line x1="217.7" y1="78.7" x2="217.7" y2="149.0" class="ci"/>
+<line x1="282.7" y1="20.3" x2="282.7" y2="86.5" class="ci"/>
+<line x1="350.0" y1="18.8" x2="350.0" y2="130.6" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 111 matches, favorite won 56 (50.5%), average price 54.8%, 95% range 41-60%"><circle cx="84.8" cy="187.4" r="14" class="hit"/><circle cx="84.8" cy="187.4" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 98 matches, favorite won 59 (60.2%), average price 64.2%, 95% range 50-69%"><circle cx="148.8" cy="153.3" r="14" class="hit"/><circle cx="148.8" cy="153.3" r="9.9" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 73 matches, favorite won 53 (72.6%), average price 74.4%, 95% range 61-82%"><circle cx="217.7" cy="109.9" r="14" class="hit"/><circle cx="217.7" cy="109.9" r="9.1" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 31 matches, favorite won 29 (93.5%), average price 83.9%, 95% range 79-98%"><circle cx="282.7" cy="36.6" r="14" class="hit"/><circle cx="282.7" cy="36.6" r="7.3" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 13 matches, favorite won 12 (92.3%), average price 93.8%, 95% range 67-99%"><circle cx="350.0" cy="40.9" r="14" class="hit"/><circle cx="350.0" cy="40.9" r="6.2" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>111</td><td>54.8%</td><td>50.5%</td><td>41-60%</td></tr>
+<tr><td>60-70%</td><td>98</td><td>64.2%</td><td>60.2%</td><td>50-69%</td></tr>
+<tr><td>70-80%</td><td>73</td><td>74.4%</td><td>72.6%</td><td>61-82%</td></tr>
+<tr><td>80-90%</td><td>31</td><td>83.9%</td><td>93.5%</td><td>79-98%</td></tr>
+<tr><td>90-100%</td><td>13</td><td>93.8%</td><td>92.3%</td><td>67-99%</td></tr>
+</tbody>
+</table>
+</section>
+<section class="panel">
+<h2>At the scheduled start</h2>
+<p class="stats">326 matches &middot; Brier 0.232 (50/50 would be 0.250) &middot; log loss 0.653<br>Favorites were priced 66.9% on average and won 59.8%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, 0 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="83.5" y1="163.0" x2="83.5" y2="227.3" class="ci"/>
+<line x1="152.3" y1="136.6" x2="152.3" y2="205.6" class="ci"/>
+<line x1="216.0" y1="101.1" x2="216.0" y2="180.3" class="ci"/>
+<line x1="283.1" y1="46.5" x2="283.1" y2="123.7" class="ci"/>
+<line x1="348.6" y1="19.2" x2="348.6" y2="137.9" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 110 matches, favorite won 53 (48.2%), average price 54.6%, 95% range 39-57%"><circle cx="83.5" cy="195.4" r="14" class="hit"/><circle cx="83.5" cy="195.4" r="10.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 94 matches, favorite won 52 (55.3%), average price 64.8%, 95% range 45-65%"><circle cx="152.3" cy="170.4" r="14" class="hit"/><circle cx="152.3" cy="170.4" r="9.8" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 65 matches, favorite won 42 (64.6%), average price 74.1%, 95% range 52-75%"><circle cx="216.0" cy="137.8" r="14" class="hit"/><circle cx="216.0" cy="137.8" r="8.8" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 45 matches, favorite won 37 (82.2%), average price 84.0%, 95% range 69-91%"><circle cx="283.1" cy="76.2" r="14" class="hit"/><circle cx="283.1" cy="76.2" r="8.0" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 12 matches, favorite won 11 (91.7%), average price 93.6%, 95% range 65-99%"><circle cx="348.6" cy="43.2" r="14" class="hit"/><circle cx="348.6" cy="43.2" r="6.1" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>110</td><td>54.6%</td><td>48.2%</td><td>39-57%</td></tr>
+<tr><td>60-70%</td><td>94</td><td>64.8%</td><td>55.3%</td><td>45-65%</td></tr>
+<tr><td>70-80%</td><td>65</td><td>74.1%</td><td>64.6%</td><td>52-75%</td></tr>
+<tr><td>80-90%</td><td>45</td><td>84.0%</td><td>82.2%</td><td>69-91%</td></tr>
+<tr><td>90-100%</td><td>12</td><td>93.6%</td><td>91.7%</td><td>65-99%</td></tr>
+</tbody>
+</table>
+<p class="note">Matches often start later than scheduled, but some start earlier, so this snapshot can include play in progress.</p>
+</section>
+<section class="panel">
+<h2>At the scheduled start</h2>
+<p class="stats">326 matches &middot; Brier 0.207 (50/50 would be 0.250) &middot; log loss 0.595<br>Favorites were priced 68.1% on average and won 64.7%</p>
+<svg viewBox="0 0 406 342" role="img" aria-label="Reliability chart, -10 minutes before start">
+<line x1="52.0" y1="14.0" x2="52.0" y2="294.0" class="gl"/>
+<text x="52.0" y="312.0" class="tick" text-anchor="middle">50%</text>
+<line x1="120.0" y1="14.0" x2="120.0" y2="294.0" class="gl"/>
+<text x="120.0" y="312.0" class="tick" text-anchor="middle">60%</text>
+<line x1="188.0" y1="14.0" x2="188.0" y2="294.0" class="gl"/>
+<text x="188.0" y="312.0" class="tick" text-anchor="middle">70%</text>
+<line x1="256.0" y1="14.0" x2="256.0" y2="294.0" class="gl"/>
+<text x="256.0" y="312.0" class="tick" text-anchor="middle">80%</text>
+<line x1="324.0" y1="14.0" x2="324.0" y2="294.0" class="gl"/>
+<text x="324.0" y="312.0" class="tick" text-anchor="middle">90%</text>
+<line x1="392.0" y1="14.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="392.0" y="312.0" class="tick" text-anchor="middle">100%</text>
+<line x1="52.0" y1="294.0" x2="392.0" y2="294.0" class="gl"/>
+<text x="44.0" y="298.0" class="tick" text-anchor="end">20%</text>
+<line x1="52.0" y1="224.0" x2="392.0" y2="224.0" class="gl"/>
+<text x="44.0" y="228.0" class="tick" text-anchor="end">40%</text>
+<line x1="52.0" y1="154.0" x2="392.0" y2="154.0" class="gl"/>
+<text x="44.0" y="158.0" class="tick" text-anchor="end">60%</text>
+<line x1="52.0" y1="84.0" x2="392.0" y2="84.0" class="gl"/>
+<text x="44.0" y="88.0" class="tick" text-anchor="end">80%</text>
+<line x1="52.0" y1="14.0" x2="392.0" y2="14.0" class="gl"/>
+<text x="44.0" y="18.0" class="tick" text-anchor="end">100%</text>
+<text x="222.0" y="336.0" class="axis" text-anchor="middle">Market price of the favorite</text>
+<text class="axis" text-anchor="middle" transform="translate(14 154.0) rotate(-90)">How often the favorite won</text>
+<line x1="52.0" y1="189.0" x2="392.0" y2="14.0" class="diag"/>
+<line x1="88.8" y1="156.3" x2="88.8" y2="225.3" class="ci"/>
+<line x1="149.6" y1="127.1" x2="149.6" y2="194.8" class="ci"/>
+<line x1="214.1" y1="91.8" x2="214.1" y2="163.4" class="ci"/>
+<line x1="284.3" y1="18.8" x2="284.3" y2="71.8" class="ci"/>
+<line x1="350.1" y1="17.3" x2="350.1" y2="100.2" class="ci"/>
+<g class="pt" tabindex="0" data-tip="50-60% bucket: 95 matches, favorite won 47 (49.5%), average price 55.4%, 95% range 40-59%"><circle cx="88.8" cy="190.8" r="14" class="hit"/><circle cx="88.8" cy="190.8" r="9.8" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="60-70% bucket: 96 matches, favorite won 56 (58.3%), average price 64.3%, 95% range 48-68%"><circle cx="149.6" cy="159.8" r="14" class="hit"/><circle cx="149.6" cy="159.8" r="9.9" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="70-80% bucket: 76 matches, favorite won 52 (68.4%), average price 73.8%, 95% range 57-78%"><circle cx="214.1" cy="124.5" r="14" class="hit"/><circle cx="214.1" cy="124.5" r="9.2" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="80-90% bucket: 40 matches, favorite won 38 (95.0%), average price 84.2%, 95% range 83-99%"><circle cx="284.3" cy="31.5" r="14" class="hit"/><circle cx="284.3" cy="31.5" r="7.8" class="dot"/></g>
+<g class="pt" tabindex="0" data-tip="90-100% bucket: 19 matches, favorite won 18 (94.7%), average price 93.8%, 95% range 75-99%"><circle cx="350.1" cy="32.4" r="14" class="hit"/><circle cx="350.1" cy="32.4" r="6.6" class="dot"/></g>
+</svg>
+<table>
+<thead><tr><th>Price bucket</th><th>Matches</th><th>Avg price</th><th>Favorite won</th><th>95% range</th></tr></thead>
+<tbody>
+<tr><td>50-60%</td><td>95</td><td>55.4%</td><td>49.5%</td><td>40-59%</td></tr>
+<tr><td>60-70%</td><td>96</td><td>64.3%</td><td>58.3%</td><td>48-68%</td></tr>
+<tr><td>70-80%</td><td>76</td><td>73.8%</td><td>68.4%</td><td>57-78%</td></tr>
+<tr><td>80-90%</td><td>40</td><td>84.2%</td><td>95.0%</td><td>83-99%</td></tr>
+<tr><td>90-100%</td><td>19</td><td>93.8%</td><td>94.7%</td><td>75-99%</td></tr>
+</tbody>
+</table>
+<p class="note">Matches often start later than scheduled, but some start earlier, so this snapshot can include play in progress.</p>
+</section>
+</div>
+</main>
+<div id="tip" role="tooltip" hidden></div>
+<script>
+const tip = document.getElementById('tip');
+document.querySelectorAll('.pt').forEach(function (g) {
+  function show() {
+    tip.textContent = g.dataset.tip; tip.hidden = false;
+    const r = g.getBoundingClientRect();
+    tip.style.left = (window.scrollX + r.left + r.width / 2) + 'px';
+    tip.style.top = (window.scrollY + r.top - 6) + 'px';
+  }
+  function hide() { tip.hidden = true; }
+  g.addEventListener('mouseenter', show); g.addEventListener('focus', show);
+  g.addEventListener('mouseleave', hide); g.addEventListener('blur', hide);
+});
+</script>
+</body>
+</html>
