@@ -4,7 +4,7 @@ A small message broker in Java modeled on Apache Kafka (topics, partitions, a lo
 
 **Short answer:** prices are well calibrated, and the one rule that looked profitable did not survive a held-out test. Details are under "Findings".
 
-> **Credit:** the broker follows Raghav's "Build Your Own Kafka" tutorial on Medium ([link: ADD URL]). The architecture is from that tutorial. What I added is listed under "What I built and changed".
+> **Credit:** the broker follows Raghav's "Build Your Own Kafka" tutorial on Medium (https://medium.com/@buildthingsuseful/building-your-own-kafka-like-system-from-scratch-a-step-by-step-guide-d3c5f0a303c0). The architecture is from that tutorial. What I added is listed under "What I built and changed".
 
 ## How the pieces fit
 
