@@ -1,0 +1,8 @@
+target/
+offsets/
+tennis-state/
+*.class
+calibration-observations.csv
+backtest.txt
+.idea/
+.vscode/
