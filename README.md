@@ -4,7 +4,9 @@ A small message broker in Java modeled on Apache Kafka (topics, partitions, a lo
 
 **Short answer:** prices are well calibrated, and the one rule that looked profitable did not survive a held-out test. Details are under "Findings".
 
-> **Credit:** the broker follows Raghav's "Build Your Own Kafka" tutorial on Medium (https://medium.com/@buildthingsuseful/building-your-own-kafka-like-system-from-scratch-a-step-by-step-guide-d3c5f0a303c0). The architecture is from that tutorial. What I added is listed under "What I built and changed".
+> **Credit:** the broker follows Raghav's "Build Your Own Kafka" tutorial on Medium ([link](PASTE-TUTORIAL-URL-HERE)). The architecture is from that tutorial.
+>
+> **How it was made:** this is my first large project. I built it together with Claude (an AI assistant), which wrote much of the code and tests under my direction while I ran everything, tested it on real data and checked the results. The section "What I built and changed" lists what was added on top of the tutorial.
 
 ## How the pieces fit
 
@@ -19,10 +21,10 @@ Polymarket API --> TennisBackfill --> [tennis-prices] [tennis-results]  (topics 
 
 The broker is used for what Kafka is for: an append-only log that several readers can replay from the start. Both studies read the full history from offset 0 every time they run.
 
-## What I built and changed(with claude)
+## What I built and changed (with Claude)
 
 **On the broker (from the tutorial)**
-1. **Reads across log segments.** A read that crossed into the next segment file kept using the old closed channel and returned bad data. I rewrote the read loop (`Partition.readMessages`) and made lookups past the end of the index return "not found". 8 tests use 100-byte segments to force many rollovers.
+1. **Reads across log segments.** A read that crossed into the next segment file kept using the old closed channel and returned bad data. The read loop (`Partition.readMessages`) was rewritten, and lookups past the end of the index now return "not found". 8 tests use 100-byte segments to force many rollovers.
 2. **Large fetch responses.** The client read replies with one read into a 4096-byte buffer, so big or fragmented replies crashed the consumer. It now reads piece by piece. 5 tests run against a fake broker, including one that sends the reply 7 bytes at a time. Three failed on the original code.
 3. **Persisted consumer offsets.** `FileOffsetStore` saves the next offset per (group, topic, partition) in `./offsets`, using a temp file and an atomic move so a crash cannot leave a half-written number. A consumer given a group id resumes where it stopped. 18 tests.
 
@@ -68,29 +70,29 @@ From 2 hours to 2 minutes before the start, prices are close to the observed win
 You need three terminal windows: ZooKeeper, the broker, and one for the tools. Keep the first two open.
 
 1. Start ZooKeeper (from the ZooKeeper folder, after copying `conf/zoo_sample.cfg` to `conf/zoo.cfg`):
-   ```
+```
    bin\zkServer.cmd
-   ```
+```
 2. Build and test (99 tests):
-   ```
+```
    mvn clean package
-   ```
+```
 3. Start the broker (arguments: id, host, port, ZooKeeper port):
-   ```
+```
    java -jar target\simple-kafka-1.0-SNAPSHOT.jar 1 localhost 9092 2181
-   ```
+```
 4. Load matches (arguments: broker, port, days back, max matches, series ids; 10365 is ATP):
-   ```
+```
    java -cp target\classes com.simplekafka.tennis.TennisBackfill localhost 9092 7 100 10365
-   ```
+```
 5. Run the calibration study (writes `calibration.html` and a CSV):
-   ```
+```
    java -cp target\classes com.simplekafka.tennis.CalibrationStudy localhost 9092 180,60,30,2 5
-   ```
+```
 6. Run the backtest (arguments: broker, port, spread in cents, fee in percent):
-   ```
+```
    java -cp target\classes com.simplekafka.tennis.BacktestStudy localhost 9092 2 0
-   ```
+```
 
 While the broker runs, `mvn clean package` fails because the jar is open. Use `mvn test` instead.
 
@@ -109,9 +111,12 @@ Java 21, Maven, JUnit 5, Apache ZooKeeper 3.8 client library.
 
 ## What I learned
 
-This was my first big project, and I used Claude to help me build and debug it. Starting from the tutorial, I learned that Kafka stores messages in an append-only log, and that a consumer can re-read from any position (an offset). I learned how to run a project with several programs at once (ZooKeeper, the broker, and the tools) and how to run its tests with Maven. The part I understand best is the finding: the market’s prices were well calibrated, and a trading rule that looked good on training data did not hold up on new data. I’m still working on understanding the broker’s storage code in detail.
+This was my first big project, and I used Claude to help me build and debug it. Starting from the tutorial, I learned that Kafka stores messages in an append-only log, and that a consumer can re-read from any position (an offset). I learned how to run a project with several programs at once (ZooKeeper, the broker, and the tools) and how to run its tests with Maven. The part I understand best is the finding: the market's prices were well calibrated, and a trading rule that looked good on training data did not hold up on new data. I'm still working on understanding the broker's storage code in detail.
 
 ## Next steps
 
-- Live collector: record real bid, ask and midpoint for upcoming matches, so the spread is measured and the sample grows past the history limit.
-- Investigate the reading at the exact scheduled start.
+- Build a live collector that records real bid, ask and midpoint for upcoming matches, so the spread is measured instead of assumed and the sample grows past Polymarket's history limit.
+- Investigate the odd reading at the exact scheduled start time, using the live order book.
+- Collect several thousand trades before drawing conclusions about any rule.
+- Test whether the findings hold for tour-level matches, not just Challenger and ITF events.
+- Handle multi-read responses for metadata, produce and create-topic, and test replication across more than one broker.
